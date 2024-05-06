@@ -1,0 +1,12 @@
+.form-container {
+    display: flex;
+    justify-content: space-between; /* Adjust this property to change the spacing */
+    padding-left : 25px;
+    padding: 25px;
+    background-color: blueviolet;
+  }
+
+  .form-container form {
+    margin-right: 10px; /* Adjust this value to change the space between forms */
+  }
+

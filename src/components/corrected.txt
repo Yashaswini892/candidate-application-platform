@@ -1,0 +1,1530 @@
+
+function JobList() {
+  const classes = useStyles();
+  const [jobs, setJobs] = useState([]); // Store fetched jobs
+  const [filteredJobs, setFilteredJobs] = useState([]); // Store filtered jobs
+  const [totalCount, setTotalCount] = useState(0);
+  const [expandedJobIds, setExpandedJobIds] = useState([]);
+  const MAX_CHAR_COUNT = 150;
+  const [buttonClicked, setButtonClicked] = useState(false);
+
+  const [minExperience, setMinExperience] = useState(0);
+  const [companyName, setCompanyName] = useState("");
+  const [preferredLocation, setPreferredLocation] = useState("");
+  const [preferredRole, setPreferredRole] = useState("");
+  const [minBasePay, setMinBasePay] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const jobData = await fetchJobs();
+      setJobs(jobData);
+      setTotalCount(jobData.length);
+    };
+
+    fetchData();
+  }, []);
+
+  const handleExpand = (jobId) => {
+    setExpandedJobIds([...expandedJobIds, jobId]);
+  };
+
+  const isExpanded = (jobId) => expandedJobIds.includes(jobId);
+
+  const truncateDescription = (description) => {
+    if (description.length > MAX_CHAR_COUNT) {
+      return description.substring(0, MAX_CHAR_COUNT) + '...';
+    }
+    return description;
+  };
+
+  const filterJobs = () => {
+    console.log("Filtering...");
+    const filtered = jobs.filter((job) => {
+      const experienceMatch = minExperience === 0 || job.minExp >= minExperience;
+      const companyMatch = companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase());
+      const locationMatch = preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase());
+      const roleMatch = preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase());
+      const basePayMatch = minBasePay === 0 || (job.minBasePay !== null && job.minBasePay >= minBasePay);
+  
+      // Check if any of the filters have been filled in by the user
+      const filtersFilled = minExperience !== 0 || companyName !== "" || preferredLocation !== "" || preferredRole !== "" || minBasePay !== 0;
+  
+      // If no filters have been filled, return true for all jobs to show all jobs
+      if (!filtersFilled) {
+        return true;
+      }
+  
+      // Otherwise, apply the filters
+      return experienceMatch && companyMatch && locationMatch && roleMatch && basePayMatch;
+    });
+  
+    console.log("Filtered jobs:", filtered);
+    setFilteredJobs(filtered);
+    setButtonClicked(true);
+  };
+  
+  
+  
+  
+
+  // This line ensures initial rendering of all jobs before applying filters
+  const allJobs = jobs.length > 0 ? jobs : [];
+
+  return (
+    <div>
+      <div className={classes.root}>
+      <div style ={{display : 'flex' , flexDirection : 'column'}}>
+      <div>
+        <div className="form-container">
+          <form>
+            <input
+              type="text"
+              placeholder="Enter min experience"
+              onChange={(event) => {
+            const minEx= parseInt(event.target.value);
+            console.log(minEx);
+            setMinExperience(minEx);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter company name"
+              onChange={(event) => {            const compa= event.target.value;
+            console.log("compa is" , compa);
+            setCompanyName(compa);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred location"
+              onChange={(event) => setPreferredLocation(event.target.value)}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred role"
+              onChange={(event) => setPreferredRole(event.target.value)}
+            />
+          </form>
+          <form>
+            <input
+              type="number"
+              placeholder="Enter min base pay"
+              onChange={(event) => setMinBasePay(parseInt(event.target.value))}
+            />
+          </form>
+          <button style={{ marginLeft: "25px" }} onClick={filterJobs}>
+            Apply filter
+          </button>
+        </div>
+        </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+              {allJobs.length > 0 ? (
+                allJobs.map((job) => (
+                  <Card key={job.jdUid} className={classes.card}>
+                    <CardHeader
+                      avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                      title={
+                        <Typography variant="h5" component="h2">
+                          {job.companyName}
+                        </Typography>
+                      }
+                      subheader={
+                        <>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.jobRole}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.location}
+                          </Typography>
+                        </>
+                      }
+                    />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div style = {{backgroundColor : "green"}}>
+                              <Link
+                                href={job.jdLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                style={{ width: '100%', marginBottom: '8px' }} 
+                              >
+                                <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                                  View Job
+                                </Button>
+                              </Link>
+                        </div>
+              <div>
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </div>
+
+                    </CardActions>
+                  </Card>
+                ))
+              ) : (
+                <Typography variant="body1">Loading jobs...</Typography> // Display loading message while fetching data
+              )}
+
+              {/* Render filtered jobs after applying filters using the 'filteredJobs' variable */}
+              {filteredJobs.length > 0 && (
+                <div>
+                  <h2>Filtered Jobs</h2>
+                  {filteredJobs.map((job) => (
+                    <Card key={job.jdUid} className={classes.card}>
+                      {/* ... rest of the card rendering logic */}
+                      <CardHeader
+                        avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                        title={
+                          <Typography variant="h5" component="h2">
+                            {job.companyName}
+                          </Typography>
+                        }
+                        subheader={
+                          <>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.jobRole}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.location}
+                            </Typography>
+                          </>
+                        }
+                      />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'row' }}>
+              <Link
+              href={job.jdLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="none"
+              style={{ width: '100%', marginBottom: '8px' }} 
+              >
+              <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                View Job
+              </Button>
+              </Link>
+
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </CardActions>
+                    </Card>
+                  ))}
+                </div>
+                
+              )}
+              </div>
+              </div>
+              </div>
+              </div>
+              );
+              }
+
+export default JobList;
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------44
+
+
+import React, { useState, useEffect } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import fetchJobs from '../data/index'; // Replace with your data fetching function
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
+import Typography from '@material-ui/core/Typography';
+import CardActions from '@material-ui/core/CardActions';
+import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
+import Avatar from '@material-ui/core/Avatar';
+import './style.css'; // Import your CSS file
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {
+    maxWidth: 345,
+    marginBottom: theme.spacing(2),
+  },
+  truncatedDescription: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  filterContainer: {
+    marginBottom: theme.spacing(2),
+  },
+  filterSelect: {
+    marginRight: theme.spacing(2),
+  },
+  whiteBoldText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+}));
+
+function JobList() {
+  const classes = useStyles();
+  const [jobs, setJobs] = useState([]); // Store fetched jobs
+  const [filteredJobs, setFilteredJobs] = useState([]); // Store filtered jobs
+  const [totalCount, setTotalCount] = useState(0);
+  const [expandedJobIds, setExpandedJobIds] = useState([]);
+  const MAX_CHAR_COUNT = 150;
+  const [buttonClicked, setButtonClicked] = useState(false);
+
+  const [minExperience, setMinExperience] = useState(0);
+  const [companyName, setCompanyName] = useState("");
+  const [preferredLocation, setPreferredLocation] = useState("");
+  const [preferredRole, setPreferredRole] = useState("");
+  const [minBasePay, setMinBasePay] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const jobData = await fetchJobs();
+      setJobs(jobData);
+      setTotalCount(jobData.length);
+      console.log("total length is " , totalCount);
+    };
+
+    fetchData();
+  }, []);
+
+  const handleExpand = (jobId) => {
+    setExpandedJobIds([...expandedJobIds, jobId]);
+  };
+
+  const isExpanded = (jobId) => expandedJobIds.includes(jobId);
+
+  const truncateDescription = (description) => {
+    if (description.length > MAX_CHAR_COUNT) {
+      return description.substring(0, MAX_CHAR_COUNT) + '...';
+    }
+    return description;
+  };
+
+  // const filterJobs = () => {
+  //   const filtered = jobs.filter((job) => {
+  //     return (
+  //       job.minExperience >= minExperience &&
+  //       (companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase())) &&
+  //       (preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase())) &&
+  //       (preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase())) &&
+  //       (minBasePay === 0 || job.minBasePay >= minBasePay)
+  //     );
+  //   });
+  //   setFilteredJobs(filtered);
+  //   console.log({filteredJobs});
+  // };
+  // const filterJobs = () => {
+  //   console.log("Filtering...");
+  //   const filtered = jobs.filter((job) => {
+  //     return (
+  //       job.minExperience >= minExperience &&
+  //       (companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase())) &&
+  //       (preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase())) &&
+  //       (preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase())) &&
+  //       (minBasePay === 0 || job.minBasePay >= minBasePay)
+  //     );
+  //   });
+  //   console.log("Filtered jobs:", filtered);
+  //   setFilteredJobs(filtered);
+  // };
+
+  const filterJobs = () => {
+    console.log("Filtering...");
+    const filtered = jobs.filter((job) => {
+      const experienceMatch = minExperience === 0 || job.minExp <= minExperience;
+      const companyMatch = companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase());
+      const locationMatch = preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase());
+      const roleMatch = preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase());
+      const basePayMatch = minBasePay === 0 || (job.minBasePay !== null && job.minBasePay >= minBasePay);
+  
+      // Check if any of the filters have been filled in by the user
+      const filtersFilled = minExperience !== 0 || companyName !== "" || preferredLocation !== "" || preferredRole !== "" || minBasePay !== 0;
+  
+      // If no filters have been filled, return true for all jobs to show all jobs
+      if (!filtersFilled) {
+        return true;
+      }
+  
+      // Otherwise, apply the filters
+      return experienceMatch && companyMatch && locationMatch && roleMatch && basePayMatch;
+    });
+  
+    console.log("Filtered jobs:", filtered);
+    setFilteredJobs(filtered);
+    setButtonClicked(true);
+  };
+  
+  
+  
+  
+
+  // This line ensures initial rendering of all jobs before applying filters
+  const allJobs = jobs.length > 0 ? jobs : [];
+
+  return (
+    <div>
+      <div className={classes.root}>
+      <div style ={{display : 'flex' , flexDirection : 'column'}}>
+      <div>
+        <div className="form-container">
+          <form>
+            <input
+              type="text"
+              placeholder="Enter min experience"
+              onChange={(event) => {
+            const minEx= parseInt(event.target.value);
+            console.log(minEx);
+            setMinExperience(minEx);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter company name"
+              onChange={(event) => {            
+            const compa= event.target.value;
+            console.log("compa is" , compa);
+            setCompanyName(compa);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred location"
+              onChange={(event) => setPreferredLocation(event.target.value)}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred role"
+              onChange={(event) => setPreferredRole(event.target.value)}
+            />
+          </form>
+          <form>
+            <input
+              type="number"
+              placeholder="Enter min base pay"
+              onChange={(event) => setMinBasePay(parseInt(event.target.value))}
+            />
+          </form>
+          <button style={{ marginLeft: "25px" }} onClick={filterJobs}>
+            Apply filter
+          </button>
+        </div>
+        </div>
+        
+
+              {buttonClicked ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+                {filteredJobs.length === 0 ? (
+      <h2>No Jobs found</h2>
+                            ) 
+                            : 
+                  (
+                  filteredJobs.map((job) => (
+                    <Card key={job.jdUid} className={classes.card}>
+                      <CardHeader
+                        avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                        title={
+                          <Typography variant="h5" component="h2">
+                            {job.companyName}
+                          </Typography>
+                        }
+                        subheader={
+                          <>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.jobRole}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.location}
+                            </Typography>
+                          </>
+                        }
+                      />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'row' }}>
+              <Link
+              href={job.jdLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="none"
+              style={{ width: '100%', marginBottom: '8px' }} 
+              >
+              <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                View Job
+              </Button>
+              </Link>
+
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </CardActions>
+                    </Card>
+                  )) 
+                  )}
+                </div> ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+              {allJobs.length > 0 ? (
+                allJobs.map((job) => (
+                  <Card key={job.jdUid} className={classes.card}>
+                    <CardHeader
+                      avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                      title={
+                        <Typography variant="h5" component="h2">
+                          {job.companyName}
+                        </Typography>
+                      }
+                      subheader={
+                        <>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.jobRole}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.location}
+                          </Typography>
+                        </>
+                      }
+                    />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div style = {{backgroundColor : "green"}}>
+                              <Link
+                                href={job.jdLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                style={{ width: '100%', marginBottom: '8px' }} 
+                              >
+                                <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                                  View Job
+                                </Button>
+                              </Link>
+                        </div>
+              <div>
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </div>
+
+                    </CardActions>
+                  </Card>
+                ))
+              ) : (
+                <Typography variant="body1">Loading jobs...</Typography> // Display loading message while fetching data
+              )}
+              </div>
+                )}
+                
+              </div>
+              </div>
+              </div>
+              );
+              }
+
+export default JobList;
+
+
+---------------------------------------------------------------------------------------
+
+
+
+import React, { useState, useEffect } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import fetchJobs from '../data/index'; // Replace with your data fetching function
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
+import Typography from '@material-ui/core/Typography';
+import CardActions from '@material-ui/core/CardActions';
+import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
+import Avatar from '@material-ui/core/Avatar';
+import './style.css'; // Import your CSS file
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {
+    maxWidth: 345,
+    marginBottom: theme.spacing(2),
+  },
+  truncatedDescription: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  filterContainer: {
+    marginBottom: theme.spacing(2),
+  },
+  filterSelect: {
+    marginRight: theme.spacing(2),
+  },
+  whiteBoldText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+}));
+
+function JobList() {
+  const classes = useStyles();
+  const [jobs, setJobs] = useState([]); // Store fetched jobs
+  const [filteredJobs, setFilteredJobs] = useState([]); // Store filtered jobs
+  const [totalCount, setTotalCount] = useState(0);
+  const [expandedJobIds, setExpandedJobIds] = useState([]);
+  const MAX_CHAR_COUNT = 150;
+  const [buttonClicked, setButtonClicked] = useState(false);
+
+  const [minExperience, setMinExperience] = useState(0);
+  const [companyName, setCompanyName] = useState("");
+  const [preferredLocation, setPreferredLocation] = useState("");
+  const [preferredRole, setPreferredRole] = useState("");
+  const [minBasePay, setMinBasePay] = useState(0);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const jobData = await fetchJobs();
+      setJobs(jobData);
+      setTotalCount(jobData.length);
+      console.log("total length is " , totalCount);
+    };
+
+    fetchData();
+  }, []);
+
+  const handleExpand = (jobId) => {
+    setExpandedJobIds([...expandedJobIds, jobId]);
+  };
+
+  const isExpanded = (jobId) => expandedJobIds.includes(jobId);
+
+  const truncateDescription = (description) => {
+    if (description.length > MAX_CHAR_COUNT) {
+      return description.substring(0, MAX_CHAR_COUNT) + '...';
+    }
+    return description;
+  };
+
+  // const filterJobs = () => {
+  //   const filtered = jobs.filter((job) => {
+  //     return (
+  //       job.minExperience >= minExperience &&
+  //       (companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase())) &&
+  //       (preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase())) &&
+  //       (preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase())) &&
+  //       (minBasePay === 0 || job.minBasePay >= minBasePay)
+  //     );
+  //   });
+  //   setFilteredJobs(filtered);
+  //   console.log({filteredJobs});
+  // };
+  // const filterJobs = () => {
+  //   console.log("Filtering...");
+  //   const filtered = jobs.filter((job) => {
+  //     return (
+  //       job.minExperience >= minExperience &&
+  //       (companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase())) &&
+  //       (preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase())) &&
+  //       (preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase())) &&
+  //       (minBasePay === 0 || job.minBasePay >= minBasePay)
+  //     );
+  //   });
+  //   console.log("Filtered jobs:", filtered);
+  //   setFilteredJobs(filtered);
+  // };
+
+  const filterJobs = () => {
+    console.log("Filtering...");
+    const filtered = jobs.filter((job) => {
+      const experienceMatch = minExperience === 0 || job.minExp <= minExperience;
+      const companyMatch = companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase());
+      const locationMatch = preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase());
+      const roleMatch = preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase());
+      const basePayMatch = minBasePay === 0 || (job.minBasePay !== null && job.minBasePay >= minBasePay);
+  
+      // Check if any of the filters have been filled in by the user
+      const filtersFilled = minExperience !== 0 || companyName !== "" || preferredLocation !== "" || preferredRole !== "" || minBasePay !== 0;
+  
+      // If no filters have been filled, return true for all jobs to show all jobs
+      if (!filtersFilled) {
+        return true;
+      }
+  
+      // Otherwise, apply the filters
+      return experienceMatch && companyMatch && locationMatch && roleMatch && basePayMatch;
+    });
+  
+    console.log("Filtered jobs:", filtered);
+    setFilteredJobs(filtered);
+    setButtonClicked(true);
+  };
+  
+  
+  
+  
+
+  // This line ensures initial rendering of all jobs before applying filters
+  const allJobs = jobs.length > 0 ? jobs : [];
+
+  return (
+    <div>
+      <div className={classes.root}>
+      <div style ={{display : 'flex' , flexDirection : 'column'}}>
+      <div>
+        <div className="form-container">
+          <form>
+            <input
+              type="text"
+              placeholder="Enter min experience"
+              onChange={(event) => {
+            const minEx= parseInt(event.target.value);
+            console.log(minEx);
+            setMinExperience(minEx);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter company name"
+              onChange={(event) => {            
+            const compa= event.target.value;
+            console.log("compa is" , compa);
+            setCompanyName(compa);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred location"
+              onChange={(event) => setPreferredLocation(event.target.value)}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred role"
+              onChange={(event) => setPreferredRole(event.target.value)}
+            />
+          </form>
+          <form>
+            <input
+              type="number"
+              placeholder="Enter min base pay"
+              onChange={(event) => setMinBasePay(parseInt(event.target.value))}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter techstack"
+            />
+          </form>
+          <select>
+            <option value="Default">Remote/On-site</option>
+
+            <option value="Remote">Remote</option>
+
+            <option value="on-site">On-site</option>
+          </select>
+          <button style={{ marginLeft: "25px" }} onClick={filterJobs}>
+            Apply filter
+          </button>
+        </div>
+        </div>
+        
+
+              {buttonClicked ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+                {filteredJobs.length === 0 ? (
+      <h2>No Jobs found</h2>
+                            ) 
+                            : 
+                  (
+                    <>
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div>
+                      <h2>Shows {filteredJobs.length} results</h2>
+                      </div>
+                  <div style = {{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+                  {filteredJobs.map((job) => (
+                    <Card key={job.jdUid} className={classes.card}>
+                      <CardHeader
+                        avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                        title={
+                          <Typography variant="h5" component="h2">
+                            {job.companyName}
+                          </Typography>
+                        }
+                        subheader={
+                          <>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.jobRole}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.location}
+                            </Typography>
+                          </>
+                        }
+                      />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div style = {{backgroundColor : "green"}}>
+                              <Link
+                                href={job.jdLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                style={{ width: '100%', marginBottom: '8px' }} 
+                              >
+                                <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                                  View Job
+                                </Button>
+                              </Link>
+                        </div>
+              <div>
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </div>
+                    </CardActions>
+                    
+                    </Card>
+                  )) }
+                  </div>
+                  </div>
+                  </>
+                  )}
+                </div> ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+              {allJobs.length > 0 ? (
+                allJobs.map((job) => (
+                  <Card key={job.jdUid} className={classes.card}>
+                    <CardHeader
+                      avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                      title={
+                        <Typography variant="h5" component="h2">
+                          {job.companyName}
+                        </Typography>
+                      }
+                      subheader={
+                        <>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.jobRole}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.location}
+                          </Typography>
+                        </>
+                      }
+                    />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div style = {{backgroundColor : "green"}}>
+                              <Link
+                                href={job.jdLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                style={{ width: '100%', marginBottom: '8px' }} 
+                              >
+                                <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                                  View Job
+                                </Button>
+                              </Link>
+                        </div>
+              <div>
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </div>
+
+                    </CardActions>
+                  </Card>
+                ))
+              ) : (
+                <Typography variant="body1">Loading jobs...</Typography> // Display loading message while fetching data
+              )}
+              </div>
+                )}
+                
+              </div>
+              </div>
+              </div>
+              );
+              }
+
+export default JobList;
+
+-------------------------------------------------------------------------------------------
+
+
+
+import React, { useState, useEffect } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import fetchJobs from '../data/index'; // Replace with your data fetching function
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import CardHeader from '@material-ui/core/CardHeader';
+import Typography from '@material-ui/core/Typography';
+import CardActions from '@material-ui/core/CardActions';
+import Button from '@material-ui/core/Button';
+import Link from '@material-ui/core/Link';
+import Avatar from '@material-ui/core/Avatar';
+import './style.css'; // Import your CSS file
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {
+    maxWidth: 345,
+    marginBottom: theme.spacing(2),
+  },
+  truncatedDescription: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  filterContainer: {
+    marginBottom: theme.spacing(2),
+  },
+  filterSelect: {
+    marginRight: theme.spacing(2),
+  },
+  whiteBoldText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+}));
+
+function JobList() {
+  const classes = useStyles();
+  const [jobs, setJobs] = useState([]); // Store fetched jobs
+  const [filteredJobs, setFilteredJobs] = useState([]); // Store filtered jobs
+  const [totalCount, setTotalCount] = useState(0);
+  const [expandedJobIds, setExpandedJobIds] = useState([]);
+  const MAX_CHAR_COUNT = 150;
+  const [buttonClicked, setButtonClicked] = useState(false);
+
+  const [minExperience, setMinExperience] = useState(0);
+  const [companyName, setCompanyName] = useState("");
+  const [preferredLocation, setPreferredLocation] = useState("");
+  const [preferredRole, setPreferredRole] = useState("");
+  const [minBasePay, setMinBasePay] = useState(0);
+  const [locationOption, setLocationOption] = useState('Default');
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const jobData = await fetchJobs();
+      setJobs(jobData);
+      setTotalCount(jobData.length);
+      console.log("total length is " , totalCount);
+    };
+
+    fetchData();
+  }, []);
+
+  const handleExpand = (jobId) => {
+    setExpandedJobIds([...expandedJobIds, jobId]);
+  };
+
+  const isExpanded = (jobId) => expandedJobIds.includes(jobId);
+
+  const truncateDescription = (description) => {
+    if (description.length > MAX_CHAR_COUNT) {
+      return description.substring(0, MAX_CHAR_COUNT) + '...';
+    }
+    return description;
+  };
+
+  // const filterJobs = () => {
+  //   const filtered = jobs.filter((job) => {
+  //     return (
+  //       job.minExperience >= minExperience &&
+  //       (companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase())) &&
+  //       (preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase())) &&
+  //       (preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase())) &&
+  //       (minBasePay === 0 || job.minBasePay >= minBasePay)
+  //     );
+  //   });
+  //   setFilteredJobs(filtered);
+  //   console.log({filteredJobs});
+  // };
+  // const filterJobs = () => {
+  //   console.log("Filtering...");
+  //   const filtered = jobs.filter((job) => {
+  //     return (
+  //       job.minExperience >= minExperience &&
+  //       (companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase())) &&
+  //       (preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase())) &&
+  //       (preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase())) &&
+  //       (minBasePay === 0 || job.minBasePay >= minBasePay)
+  //     );
+  //   });
+  //   console.log("Filtered jobs:", filtered);
+  //   setFilteredJobs(filtered);
+  // };
+
+  const filterJobs = () => {
+    console.log("Filtering...");
+    const filtered = jobs.filter((job) => {
+      const minExpValue = isNaN(parseInt(minExperience)) ? 0 : parseInt(minExperience);    
+      const minBasePayValue = isNaN(parseFloat(minBasePay)) ? 0 : parseFloat(minBasePay);
+                              
+      const experienceMatch = minExperience === 0 || job.minExp <= minExperience;
+      const companyMatch = companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase());
+      const locationMatch = preferredLocation === "" || job.location.toLowerCase().includes(preferredLocation.toLowerCase());
+      const roleMatch = preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase());
+      const basePayMatch = minBasePay === 0 || (job.minJdSalary !== null && job.minJdSalary >= minBasePay);
+  
+      // const filtersFilled = minExperience !== "NaN" || companyName !== "" || preferredLocation !== "" || preferredRole !== "" || minBasePay !== "NaN";
+
+      const filtersFilled =  minExpValue !== 0 || companyName !== "" || preferredLocation !== "" || preferredRole !== "" || minBasePayValue !== 0;
+  
+      // If no filters have been filled, return true for all jobs to show all jobs
+      if (!filtersFilled) {
+        return true;
+      }
+  
+      // Otherwise, apply the filters
+      return experienceMatch && companyMatch && locationMatch && roleMatch && basePayMatch;
+    });
+  
+    console.log("Filtered jobs:", filtered);
+    setFilteredJobs(filtered);
+    setButtonClicked(true);
+  };
+
+  // const filterJobs = () => {
+  //   console.log("Filtering...");
+  //   const filtered = jobs.filter((job) => {
+  //     const experienceMatch = minExperience === 0 || job.minExp <= minExperience;
+  //     const companyMatch = companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase());
+  //     const roleMatch = preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase());
+  //     const basePayMatch = minBasePay === 0 || (job.minBasePay !== null && job.minBasePay >= minBasePay);
+  
+  //     let locationMatch = true;
+  
+  //     if (locationOption === 'Remote') {
+  //       // For Remote option, location is not considered for filtering
+  //       locationMatch = job.location.toLowerCase() === "remote";
+  //     } else if (locationOption === 'On-site') {
+  //       // For On-site option, filter by preferred location
+  //       locationMatch = job.location.toLowerCase() === preferredLocation.toLowerCase();
+  //     }
+  
+  //     // Check if any of the filters have been filled in by the user
+  //     const filtersFilled = minExperience !== 0 || companyName !== "" || preferredRole !== "" || minBasePay !== 0 || locationOption !== 'Default';
+  
+  //     // If no filters have been filled, return true for all jobs to show all jobs
+  //     if (!filtersFilled) {
+  //       return true;
+  //     }
+  
+  //     // Otherwise, apply the filters
+  //     return experienceMatch && companyMatch && roleMatch && basePayMatch && locationMatch;
+  //   });
+  
+  //   console.log("Filtered jobs:", filtered);
+  //   setFilteredJobs(filtered);
+  //   setButtonClicked(true);
+  // };
+
+  // const filterJobs = () => {
+  //   console.log("Filtering...");
+  //   const filtered = jobs.filter((job) => {
+  //     const experienceMatch = minExperience === 0 || job.minExp <= minExperience;
+  //     const companyMatch = companyName === "" || job.companyName.toLowerCase().includes(companyName.toLowerCase());
+  //     const roleMatch = preferredRole === "" || job.jobRole.toLowerCase().includes(preferredRole.toLowerCase());
+  //     const basePayMatch = minBasePay === 0 || (job.minBasePay !== null && job.minBasePay >= minBasePay);
+  
+  //     let locationMatch = true;
+  
+  //     if (locationOption === 'Remote') {
+  //       // For Remote option, location is not considered for filtering
+  //       locationMatch = job.location.toLowerCase() === "remote";
+  //     } else if (locationOption === 'On-site') {
+  //       // For On-site option, filter by preferred location
+  //       if (preferredLocation === "") {
+  //         // If preferred location is not entered, filter jobs where location is not "remote"
+  //         locationMatch = job.location.toLowerCase() !== "remote";
+  //       } else {
+  //         // If preferred location is entered, filter by preferred location
+  //         locationMatch = job.location.toLowerCase() === preferredLocation.toLowerCase();
+  //       }
+  //     }
+  
+  //     // Check if any of the filters have been filled in by the user
+  //     const filtersFilled = minExperience !== 0 || companyName !== "" || preferredRole !== "" || minBasePay !== 0 || locationOption !== 'Default';
+  
+  //     // If no filters have been filled, return true for all jobs to show all jobs
+  //     if (!filtersFilled) {
+  //       return true;
+  //     }
+  
+  //     // Otherwise, apply the filters
+  //     return experienceMatch && companyMatch && roleMatch && basePayMatch && locationMatch;
+  //   });
+  
+  //   console.log("Filtered jobs:", filtered);
+  //   setFilteredJobs(filtered);
+  //   setButtonClicked(true);
+  // };
+  
+  
+  
+  
+  
+  
+
+  // This line ensures initial rendering of all jobs before applying filters
+  const allJobs = jobs.length > 0 ? jobs : [];
+
+  return (
+    <div>
+      <div className={classes.root}>
+      <div style ={{display : 'flex' , flexDirection : 'column'}}>
+      <div>
+        <div className="form-container">
+          <form>
+            <input
+              type="text"
+              placeholder="Enter min experience"
+              onChange={(event) => {
+            const minEx= parseInt(event.target.value);
+            console.log(minEx);
+            setMinExperience(minEx);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter company name"
+              onChange={(event) => {            
+            const compa= event.target.value;
+            console.log("compa is" , compa);
+            setCompanyName(compa);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred location"
+              onChange={(event) =>  {
+            const loco =event.target.value;
+            console.log(loco);
+            setPreferredLocation(loco);}}
+              disabled={locationOption === 'Remote'}
+            />
+</form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter preferred role"
+              onChange={(event) => setPreferredRole(event.target.value)}
+            />
+          </form>
+          <form>
+            <input
+              type="number"
+              placeholder="Enter min base pay"
+              onChange={(event) => {
+            const minBase= parseInt(event.target.value);
+            console.log(minBase);
+            setMinBasePay(minBase);}}
+            />
+          </form>
+          <form>
+            <input
+              type="text"
+              placeholder="Enter techstack"
+            />
+          </form>
+          <select value={locationOption} onChange={(e) => setLocationOption(e.target.value)}>
+              <option value="Default">Remote/On-site</option>
+              <option value="Remote">Remote</option>
+              <option value="On-site">On-site</option>
+          </select>
+          <button style={{ marginLeft: "25px" }} onClick={filterJobs}>
+            Apply filter
+          </button>
+        </div>
+        </div>
+        
+
+              {buttonClicked ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+                {filteredJobs.length === 0 ? (
+      <h2>No Jobs found</h2>
+                            ) 
+                            : 
+                  (
+                    <>
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div>
+                      <h2>Shows {filteredJobs.length} results</h2>
+                      </div>
+                  <div style = {{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+                  {filteredJobs.map((job) => (
+                    <Card key={job.jdUid} className={classes.card}>
+                      <CardHeader
+                        avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                        title={
+                          <Typography variant="h5" component="h2">
+                            {job.companyName}
+                          </Typography>
+                        }
+                        subheader={
+                          <>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.jobRole}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              {job.location}
+                            </Typography>
+                          </>
+                        }
+                      />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div style = {{backgroundColor : "green"}}>
+                              <Link
+                                href={job.jdLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                style={{ width: '100%', marginBottom: '8px' }} 
+                              >
+                                <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                                  View Job
+                                </Button>
+                              </Link>
+                        </div>
+              <div>
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </div>
+                    </CardActions>
+                    
+                    </Card>
+                  )) }
+                  </div>
+                  </div>
+                  </>
+                  )}
+                </div> ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+              {allJobs.length > 0 ? (
+                allJobs.map((job) => (
+                  <Card key={job.jdUid} className={classes.card}>
+                    <CardHeader
+                      avatar={<Avatar src={job.logoUrl} alt="Company Logo" />}
+                      title={
+                        <Typography variant="h5" component="h2">
+                          {job.companyName}
+                        </Typography>
+                      }
+                      subheader={
+                        <>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.jobRole}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {job.location}
+                          </Typography>
+                        </>
+                      }
+                    />
+                    <CardContent>
+                      {isExpanded(job.jdUid) ? (
+                        <Typography variant="body2" component="p">
+                          {job.jobDetailsFromCompany}
+                        </Typography>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          component="p"
+                          className={classes.truncatedDescription}
+                        >
+                          {truncateDescription(job.jobDetailsFromCompany)}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" component="p">
+                        Minimum Experience:{" "}
+                        {job.minExp !== null ? (
+                          job.minExp === job.maxExp ? ` ${job.minExp} years` : ` ${job.minExp} - ${job.maxExp} years`
+                        ) : ' Not specified'}
+                      </Typography>
+                    </CardContent>
+                    <CardActions>
+                      <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
+                      <div style = {{backgroundColor : "green"}}>
+                              <Link
+                                href={job.jdLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                style={{ width: '100%', marginBottom: '8px' }} 
+                              >
+                                <Button size="small" className={classes.whiteBoldText} style={{ width: '100%' }}>
+                                  View Job
+                                </Button>
+                              </Link>
+                        </div>
+              <div>
+              {isExpanded(job.jdUid) ? null : (
+              <Button
+                size="small"
+                onClick={() => handleExpand(job.jdUid)}
+                style={{ width: '100%' }}
+              >
+                Expand Description
+              </Button>
+              )}
+              </div>
+              </div>
+
+                    </CardActions>
+                  </Card>
+                ))
+              ) : (
+                <Typography variant="body1">Loading jobs...</Typography> // Display loading message while fetching data
+              )}
+              </div>
+                )}
+                
+              </div>
+              </div>
+              </div>
+              );
+              }
+
+export default JobList;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
